@@ -15,11 +15,19 @@ struct MessengerChatChannelListItem: ChatChannelListItemView.SwiftUIView {
         HStack {
             uiConfig.channelList.itemSubviews.avatarView.SwiftUI(dataSource.content)
                 .frame(width: 50, height: 50)
-            if
-                let channel = dataSource.content.channel,
-                let currentUserId = dataSource.content.currentUserId,
-                let channelName = UIConfig.default.channelList.channelNamer(channel, currentUserId) {
-                Text(channelName)
+            VStack(
+                alignment: .leading,
+                spacing: 3
+            ) {
+                Text(dataSource.titleText ?? "")
+                    .font(.system(.body))
+                Text(
+                    (dataSource.subtitleText ?? "")
+                        + " • "
+                        + (dataSource.timestampText ?? "")
+                )
+                .font(.system(.footnote))
+                .foregroundColor(Color.gray)
             }
             
             Spacer()

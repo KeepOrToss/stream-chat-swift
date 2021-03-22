@@ -22,7 +22,7 @@ struct MessengerChatChannelList: View {
                     )
             )
             .navigationBarTitleDisplayMode(.inline)
-            .navigationTitle("Chat")
+            .navigationTitle("Chats")
         }
     }
 }

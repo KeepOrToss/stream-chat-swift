@@ -120,6 +120,16 @@ public struct _ChatMessage<ExtraData: ExtraDataTypes> {
     public let currentUserReactions: Set<_ChatMessageReaction<ExtraData>>
     
     public let isSentByCurrentUser: Bool
+
+    /// The message pinning information. Is `nil` if the message is not pinned.
+    public let pinDetails: _MessagePinDetails<ExtraData>?
+}
+
+extension _ChatMessage {
+    /// Indicates whether the message is pinned or not.
+    public var isPinned: Bool {
+        pinDetails != nil
+    }
 }
 
 extension _ChatMessage: Hashable {
@@ -160,6 +170,18 @@ public enum MessageType: String, Codable {
     
     /// A deleted message.
     case deleted
+}
+
+// The pinning information of a message.
+public struct _MessagePinDetails<ExtraData: ExtraDataTypes> {
+    /// Date when the message got pinned
+    public let pinnedAt: Date
+
+    /// The user that pinned the message
+    public let pinnedBy: _ChatUser<ExtraData.User>
+
+    /// Date when the message pin expires. An nil value means that message does not expire
+    public let expiresAt: Date
 }
 
 /// A possible additional local state of the message. Applies only for the messages of the current user.

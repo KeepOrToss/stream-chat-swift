@@ -7,6 +7,10 @@ import XCTest
 
 class ChannelDTO_Tests: XCTestCase {
     var database: DatabaseContainer!
+
+    // The channel payloads are created with this date, so it is easier to create messages above or below this date
+    // which is useful for tests related with the createdAt date of the messages.
+    static let channelCreatedDate = Date.unique
     
     override func setUp() {
         super.setUp()
@@ -110,6 +114,13 @@ class ChannelDTO_Tests: XCTestCase {
             Assert.willBeEqual(payload.messages[0].parentId, loadedChannel?.latestMessages.first?.parentMessageId)
             Assert.willBeEqual(payload.messages[0].reactionScores, loadedChannel?.latestMessages.first?.reactionScores)
             Assert.willBeEqual(payload.messages[0].replyCount, loadedChannel?.latestMessages.first?.replyCount)
+
+            // Pinned Messages
+            Assert.willBeEqual(payload.pinnedMessages[0].id, loadedChannel?.latestMessages[0].id)
+            Assert.willBeEqual(payload.pinnedMessages[0].pinned, loadedChannel?.pinnedMessages[0].isPinned)
+            Assert.willBeEqual(payload.pinnedMessages[0].pinnedAt, loadedChannel?.pinnedMessages[0].pinDetails?.pinnedAt)
+            Assert.willBeEqual(payload.pinnedMessages[0].pinExpires, loadedChannel?.pinnedMessages[0].pinDetails?.expiresAt)
+            Assert.willBeEqual(payload.pinnedMessages[0].pinnedBy?.id, loadedChannel?.pinnedMessages[0].pinDetails?.pinnedBy.id)
             
             // Message user
             Assert.willBeEqual(payload.messages[0].user.id, loadedChannel?.latestMessages.first?.author.id)
@@ -164,6 +175,26 @@ class ChannelDTO_Tests: XCTestCase {
         // Assert only 25 messages is serialized in the model
         let channel: ChatChannel? = database.viewContext.channel(cid: channelId)?.asModel()
         XCTAssertEqual(channel?.latestMessages.count, 25)
+    }
+
+    func test_channelPayload_pinnedMessagesArePopulated() throws {
+        let channelId: ChannelId = .unique
+        let pinnedMessages: [MessagePayload<NoExtraData>] = [
+            .dummy(messageId: .unique, authorUserId: .unique),
+            .dummy(messageId: .unique, authorUserId: .unique)
+        ]
+        let payload = dummyPayload(
+            with: channelId,
+            numberOfMessages: 100,
+            pinnedMessages: pinnedMessages
+        )
+
+        try database.writeSynchronously { session in
+            try session.saveChannel(payload: payload)
+        }
+
+        let channel: ChatChannel? = database.viewContext.channel(cid: channelId)?.asModel()
+        XCTAssertEqual(channel?.pinnedMessages.count, payload.pinnedMessages.count)
     }
 
     func test_channelPayload_truncatedMessagesAreIgnored() throws {
@@ -473,7 +504,7 @@ extension XCTestCase {
             id: .unique,
             type: .regular,
             user: dummyUser,
-            createdAt: .unique,
+            createdAt: ChannelDTO_Tests.channelCreatedDate.addingTimeInterval(.random(in: 100...400)),
             updatedAt: .unique,
             deletedAt: nil,
             text: .unique,
@@ -498,7 +529,8 @@ extension XCTestCase {
         with channelId: ChannelId,
         numberOfMessages: Int = 1,
         numberOfWatchers: Int = 1,
-        includeMembership: Bool = true
+        includeMembership: Bool = true,
+        pinnedMessages: [MessagePayload<NoExtraData>]? = nil
     ) -> ChannelPayload<NoExtraData> {
         let member: MemberPayload<NoExtraData> =
             .init(
@@ -538,7 +570,7 @@ extension XCTestCase {
                     extraData: .defaultValue,
                     typeRawValue: channelId.type.rawValue,
                     lastMessageAt: lastMessageAt,
-                    createdAt: channelCreatedDate,
+                    createdAt: ChannelDTO_Tests.channelCreatedDate,
                     deletedAt: nil,
                     updatedAt: .unique,
                     createdBy: dummyUser,
@@ -562,7 +594,7 @@ extension XCTestCase {
                                 args: "test"
                             )
                         ],
-                        createdAt: .unique,
+                        createdAt: ChannelDTO_Tests.channelCreatedDate,
                         updatedAt: .unique
                     ),
                     isFrozen: true,
@@ -576,6 +608,7 @@ extension XCTestCase {
                 members: [member],
                 membership: includeMembership ? member : nil,
                 messages: messages,
+                pinnedMessages: pinnedMessages != nil ? pinnedMessages! : [messages.first!],
                 channelReads: [dummyChannelRead]
             )
         
@@ -672,7 +705,7 @@ extension XCTestCase {
                                 args: "test"
                             )
                         ],
-                        createdAt: .unique,
+                        createdAt: ChannelDTO_Tests.channelCreatedDate,
                         updatedAt: .unique
                     ),
                     isFrozen: true,
@@ -686,6 +719,7 @@ extension XCTestCase {
                 members: [member],
                 membership: member,
                 messages: [dummyMessageWithNoExtraData],
+                pinnedMessages: [dummyMessageWithNoExtraData],
                 channelReads: [dummyChannelReadWithNoExtraData]
             )
         

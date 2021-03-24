@@ -9,6 +9,7 @@ public typealias ChatMessageListRouter = _ChatMessageListRouter<NoExtraData>
 
 open class _ChatMessageListRouter<ExtraData: ExtraDataTypes>: ChatRouter<_ChatMessageListVC<ExtraData>> {
     open func showMessageActionsPopUp(
+        messageView: UIView,
         messageContentFrame: CGRect,
         messageData: _ChatMessageGroupPart<ExtraData>,
         messageActionsController: _ChatMessageActionsVC<ExtraData>,
@@ -16,6 +17,7 @@ open class _ChatMessageListRouter<ExtraData: ExtraDataTypes>: ChatRouter<_ChatMe
     ) {
         let popup = _ChatMessagePopupVC<ExtraData>()
         popup.message = messageData
+        popup.originalMessageView = messageView
         popup.messageViewFrame = messageContentFrame
         popup.actionsController = messageActionsController
         popup.reactionsController = messageReactionsController

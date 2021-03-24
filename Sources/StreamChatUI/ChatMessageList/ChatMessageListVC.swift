@@ -361,6 +361,7 @@ open class _ChatMessageListVC<ExtraData: ExtraDataTypes>: _ViewController,
                     },
                     completion: { _ in
                         self.router.showMessageActionsPopUp(
+                            messageView: cell.messageView,
                             messageContentFrame: cell.messageView.superview!.convert(cell.messageView.frame, to: nil),
                             messageData: messageData,
                             messageActionsController: actionsController,

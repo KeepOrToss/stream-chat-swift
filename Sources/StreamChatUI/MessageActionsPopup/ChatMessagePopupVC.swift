@@ -30,6 +30,7 @@ open class _ChatMessagePopupVC<ExtraData: ExtraDataTypes>: _ViewController, UICo
 
     public var message: _ChatMessageGroupPart<ExtraData>!
     public var messageViewFrame: CGRect!
+    public var originalMessageView: UIView!
     public var actionsController: _ChatMessageActionsVC<ExtraData>!
     public var reactionsController: _ChatMessageReactionsVC<ExtraData>?
 
@@ -145,6 +146,7 @@ open class _ChatMessagePopupVC<ExtraData: ExtraDataTypes>: _ViewController, UICo
     override open func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
 
+        originalMessageView.isHidden = true
         // Initially, the `applyInitialContentOffset` invocation was in `viewDidLayoutSubviews`
         // since the content offset can be applied when all the views are laid out
         // and `scrollView` content size is calculated.
@@ -157,13 +159,18 @@ open class _ChatMessagePopupVC<ExtraData: ExtraDataTypes>: _ViewController, UICo
         //  2. postpones it to the next run-loop iteration which guarantees it happens after `viewDidLayoutSubviews`
         DispatchQueue.main.async {
             self.applyInitialContentOffset()
+            self.scrollToMakeMessageVisible() // Makes the animation look a bit weird, but it's much faster...
         }
     }
     
     override open func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-
         scrollToMakeMessageVisible()
+    }
+
+    override open func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        originalMessageView.isHidden = false
     }
 
     open func applyInitialContentOffset() {

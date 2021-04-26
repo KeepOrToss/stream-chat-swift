@@ -5,7 +5,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 # Upcoming
 
-### 🔄 Changed
+### 🐞 Fixed
+- It's safe now to use `ChatChannel` and `ChatMessage` across multiple threads [#984](https://github.com/GetStream/stream-chat-swift/pull/984)
+- Web socket reconnection logic better handles the "no internet" errors [#970](https://github.com/GetStream/stream-chat-swift/pull/970)
+
+### ✅ Added
+- Expose the entire quoted message on `ChatMessage` instead of its `id` [#992](https://github.com/GetStream/stream-chat-swift/pull/992)
+- Introduce `mentionText(forUser:)` on `ChatMessageComposerVC` to allow subclasses to provide custom @ mention text.
+   [#1000](https://github.com/GetStream/stream-chat-swift/pull/1000)
+
+### ⛔️ Deprecated
+- `ChatMessage.quotedMessageId` is now deprecated. Use `quotedMessage?.id` instead [#992](https://github.com/GetStream/stream-chat-swift/pull/992)
 
 # [3.2.0-beta.8](https://github.com/GetStream/stream-chat-swift/releases/tag/3.2.0-beta.8)
 _April 23, 2021_
@@ -39,6 +49,7 @@ _April 09, 2021_
 
 ### ✅ Added
 - Channels are properly marked as read when `ChatChannelVC` is displayed [#972](https://github.com/GetStream/stream-chat-swift/pull/972)
+- Channels now support typing indicators [#986](https://github.com/GetStream/stream-chat-swift/pull/986)
 
 ### 🐞 Fixed
 - Fix `ChannelController`s created with `createChannelWithId` and `createChannelWithMembers` functions not reporting their initial values [#945](https://github.com/GetStream/stream-chat-swift/pull/945)

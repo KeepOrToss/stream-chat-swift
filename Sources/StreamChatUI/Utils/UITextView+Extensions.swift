@@ -9,7 +9,7 @@ extension UITextView {
     /// Reference:
     /// https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/TextLayout/Tasks/StringHeight.html
     ///
-    func calculatedTextHeight() -> CGFloat {
+    open func calculatedTextHeight() -> CGFloat {
         // Height is not calculated correctly with empty text
         let string: String = text.isEmpty ? " " : text
         let textStorage = NSTextStorage(string: string)

@@ -75,7 +75,7 @@ open class _ChatUserSearchController<ExtraData: ExtraDataTypes>: DataController,
     public let client: _ChatClient<ExtraData>
     
     /// Filter hash this controller observes.
-    let explicitFilterHash = UUID().uuidString
+    public let explicitFilterHash = UUID().uuidString
     
     lazy var query: _UserListQuery<ExtraData.User> = {
         // Filter is just a mock, explicit hash will override it
@@ -158,7 +158,7 @@ open class _ChatUserSearchController<ExtraData: ExtraDataTypes>: DataController,
     ///
     /// It's safe to call this method repeatedly.
     ///
-    private func startUserListObserverIfNeeded() {
+    public func startUserListObserverIfNeeded() {
         guard state == .initialized else { return }
         do {
             try userListObserver.startObserving()
@@ -197,6 +197,17 @@ open class _ChatUserSearchController<ExtraData: ExtraDataTypes>: DataController,
     public func search(term: String?, completion: ((_ error: Error?) -> Void)? = nil) {
         startUserListObserverIfNeeded()
         
+        let query = buildQuery(term: term)
+        
+        lastQuery = query
+        
+        userQueryUpdater.update(userListQuery: query, policy: .replace) { error in
+            self.state = error == nil ? .remoteDataFetched : .remoteDataFetchFailed(ClientError(with: error))
+            self.callback { completion?(error) }
+        }
+    }
+  
+    open func buildQuery(term: String?) -> _UserListQuery<ExtraData.User> {
         var query = _UserListQuery<ExtraData.User>(sort: [.init(key: .name, isAscending: true)])
         if let term = term, !term.isEmpty {
             query.filter = .or([
@@ -210,13 +221,7 @@ open class _ChatUserSearchController<ExtraData: ExtraDataTypes>: DataController,
         // so we only sort client-side
         query.filter?.explicitHash = explicitFilterHash
         query.shouldBeUpdatedInBackground = false
-        
-        lastQuery = query
-        
-        userQueryUpdater.update(userListQuery: query, policy: .replace) { error in
-            self.state = error == nil ? .remoteDataFetched : .remoteDataFetchFailed(ClientError(with: error))
-            self.callback { completion?(error) }
-        }
+        return query
     }
     
     /// Loads next users from backend.

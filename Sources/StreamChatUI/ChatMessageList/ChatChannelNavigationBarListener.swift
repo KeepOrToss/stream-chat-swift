@@ -32,7 +32,10 @@ class ChatChannelNavigationBarListener<ExtraData: ExtraDataTypes> {
         channelController = client.channelController(for: channel)
         channelController.setDelegate(self)
 
-        fireNewNavbarData()
+        // ensure the first update is fired
+        DispatchQueue.main.async {
+          self.fireNewNavbarData()
+        }
     }
 
     func fireNewNavbarData() {

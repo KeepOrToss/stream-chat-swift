@@ -70,13 +70,6 @@ private class GroupChatChannelNavigationBarListener<ExtraData: ExtraDataTypes>: 
 
 private class DirectChatChannelNavigationBarListener<ExtraData: ExtraDataTypes>: ChatChannelNavigationBarListener<ExtraData> {
     let memberController: _ChatChannelMemberController<ExtraData>?
-    let df: DateComponentsFormatter = {
-        let df = DateComponentsFormatter()
-        df.allowedUnits = [.minute]
-        df.unitsStyle = .full
-        return df
-    }()
-
     private var timer: Timer!
 
     override init(client: _ChatClient<ExtraData>, channel: ChannelId, namer: @escaping ChatChannelNamer<ExtraData>) {
@@ -103,8 +96,8 @@ private class DirectChatChannelNavigationBarListener<ExtraData: ExtraDataTypes>:
             // need to specify how long user have been online
             subtitle = "Online"
         } else {
-            if let lastActive = member.lastActiveAt, let minutes = df.string(from: lastActive, to: Date()) {
-                subtitle = "Seen \(minutes) ago"
+            if let lastActive = member.lastActiveAt, let ago = lastActive.agoTimestampString {
+                subtitle = "Seen \(ago)"
             } else {
                 subtitle = "Offline"
             }
@@ -118,4 +111,30 @@ extension DirectChatChannelNavigationBarListener: _ChatChannelMemberControllerDe
         _ controller: _ChatChannelMemberController<ExtraData>,
         didUpdateMember change: EntityChange<_ChatChannelMember<ExtraData.User>>
     ) { fireNewNavbarData() }
+}
+
+
+extension DateComponentsFormatter {
+  
+  static let agoFormatter: DateComponentsFormatter = {
+    let formatter = DateComponentsFormatter()
+    formatter.unitsStyle = .full
+    formatter.maximumUnitCount = 1
+    formatter.allowedUnits = [.year, .month, .day, .hour, .minute, .second]
+    return formatter
+  }()
+  
+}
+
+extension Date {
+  
+  var agoTimestampString: String? {
+    let formatter = DateComponentsFormatter.agoFormatter
+    
+    guard let timeString = formatter.string(from: self, to: Date()) else {
+      return nil
+    }
+    
+    return "\(timeString) ago"
+  }
 }

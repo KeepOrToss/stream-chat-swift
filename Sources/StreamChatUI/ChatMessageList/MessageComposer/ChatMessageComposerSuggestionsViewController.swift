@@ -125,7 +125,7 @@ open class _ChatMessageComposerSuggestionsViewController<ExtraData: ExtraDataTyp
                     guard let self = self, let changedFrame = change.newValue else { return }
 
                     let newFrame = bottomAnchoredView.convert(changedFrame, to: nil)
-                    self.view.frame.origin.y = newFrame.minY - self.view.frame.height
+                    self.view.frame.origin.y = newFrame.minY - self.view.frame.height - 60 // TODO: Remove -60 since it's a hack.
                 }
             }
         )

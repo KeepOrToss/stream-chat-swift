@@ -53,7 +53,7 @@ public extension Customizable where Self: UIViewController {
 extension UIConfigProvider where Self: _View {
     public func uiConfigDidRegister() {
         if isInitialized {
-            log.assertionFailure(
+            assertionFailure(
                 "`UIConfig` was assigned after the view has been already initialized. This is most likely caused by assigning " +
                     "the custom `UIConfig` instance after the view has been added to the view hierarchy, or after the view's subviews " +
                     "have been initialized already. This is undefined behavior and should be avoided."
@@ -66,7 +66,7 @@ extension UIConfigProvider where Self: _View {
 /// All conformers will have StreamChatUI appearance settings by default.
 open class _View: UIView, AppearanceSetting, Customizable {
     // Flag for preventing multiple lifecycle methods calls.
-    fileprivate var isInitialized: Bool = false
+    private(set) var isInitialized: Bool = false
     
     override open func didMoveToSuperview() {
         super.didMoveToSuperview()

@@ -37,6 +37,14 @@ open class _СhatMessageCollectionViewCell<ExtraData: ExtraDataTypes>: _Collecti
     public var message: _ChatMessageGroupPart<ExtraData>? {
         didSet { updateContentIfNeeded() }
     }
+  
+    public enum MessageAlignment {
+        case leading, trailing, auto
+    }
+    
+    public var messageAlignment: MessageAlignment = .auto {
+        didSet { messageView.alignment = messageAlignment }
+    }
 
     // MARK: - Subviews
 
@@ -64,26 +72,44 @@ open class _СhatMessageCollectionViewCell<ExtraData: ExtraDataTypes>: _Collecti
 
     override open func updateContent() {
         messageView.message = message
-
-        switch message?.isSentByCurrentUser {
-        case true?:
-            assert(messageViewLeadingConstraint == nil, "The cell was already used for incoming message")
-            if messageViewTrailingConstraint == nil {
-                messageViewTrailingConstraint = messageView.trailingAnchor
-                    .pin(equalTo: contentView.layoutMarginsGuide.trailingAnchor)
-                messageViewTrailingConstraint!.isActive = true
-            }
-
-        case false?:
+      
+        switch messageAlignment {
+        
+        case .leading:
             assert(messageViewTrailingConstraint == nil, "The cell was already used for outgoing message")
             if messageViewLeadingConstraint == nil {
                 messageViewLeadingConstraint = messageView.leadingAnchor
                     .pin(equalTo: contentView.layoutMarginsGuide.leadingAnchor)
                 messageViewLeadingConstraint!.isActive = true
             }
+        case .trailing:
+            assert(messageViewLeadingConstraint == nil, "The cell was already used for incoming message")
+            if messageViewTrailingConstraint == nil {
+                messageViewTrailingConstraint = messageView.trailingAnchor
+                    .pin(equalTo: contentView.layoutMarginsGuide.trailingAnchor)
+                messageViewTrailingConstraint!.isActive = true
+            }
+        case .auto:
+            switch message?.isSentByCurrentUser {
+            case true?:
+                assert(messageViewLeadingConstraint == nil, "The cell was already used for incoming message")
+                if messageViewTrailingConstraint == nil {
+                    messageViewTrailingConstraint = messageView.trailingAnchor
+                        .pin(equalTo: contentView.layoutMarginsGuide.trailingAnchor)
+                    messageViewTrailingConstraint!.isActive = true
+                }
 
-        case nil:
-            break
+            case false?:
+                assert(messageViewTrailingConstraint == nil, "The cell was already used for outgoing message")
+                if messageViewLeadingConstraint == nil {
+                    messageViewLeadingConstraint = messageView.leadingAnchor
+                        .pin(equalTo: contentView.layoutMarginsGuide.leadingAnchor)
+                    messageViewLeadingConstraint!.isActive = true
+                }
+
+            case nil:
+                break
+            }
         }
     }
 

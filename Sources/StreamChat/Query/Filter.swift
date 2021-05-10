@@ -97,7 +97,7 @@ public struct Filter<Scope: FilterScope> {
     /// Set this value if you want to alter the hash of the filter. This is handy when you want to change the filter
     /// but you want the changed filter to have the same hash as the original filter (for example, when you use the
     /// hash to identify queries).
-    var explicitHash: String?
+    public var explicitHash: String?
     
     /// Creates a new instance of `Filter`.
     ///

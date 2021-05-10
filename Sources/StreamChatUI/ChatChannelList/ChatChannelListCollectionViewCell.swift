@@ -56,6 +56,7 @@ open class _ChatChannelListCollectionViewCell<ExtraData: ExtraDataTypes>: _Colle
 
         contentView.addSubview(itemView)
         NSLayoutConstraint.activate([
+            // TODO: CJ: Should itemView be pinned to `contentView.layoutMarginsGuide` rather, similar to messaging?
             itemView.widthAnchor.pin(equalTo: contentView.widthAnchor),
             itemView.topAnchor.pin(equalTo: contentView.topAnchor),
             itemView.trailingAnchor.pin(equalTo: swipeableView.contentTrailingAnchor),

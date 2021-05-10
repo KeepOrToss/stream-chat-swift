@@ -5,6 +5,38 @@
 import CoreData
 import Foundation
 
+/*
+ Create a LogicConfig object to allow the viewer to inject a custom ChatUserSearchController.
+ */
+public typealias LogicConfig = _LogicConfig<NoExtraData>
+
+public struct _LogicConfig<ExtraData: ExtraDataTypes> {
+
+  public var userSearchControllerHack: _ChatUserSearchController<ExtraData>.Type = _ChatUserSearchController<ExtraData>.self
+  
+}
+
+private var defaults: [String: Any] = [:]
+
+public extension _LogicConfig {
+    static var `default`: Self {
+        get {
+            let key = String(describing: ExtraData.self)
+            if let existing = defaults[key] as? Self {
+                return existing
+            } else {
+                let config = Self()
+                defaults[key] = config
+                return config
+            }
+        }
+        set {
+            let key = String(describing: ExtraData.self)
+            defaults[key] = newValue
+        }
+    }
+}
+
 extension _ChatClient {
     /// Creates a new `_ChatUserSearchController` with the provided user query.
     ///
@@ -12,8 +44,10 @@ extension _ChatClient {
     ///
     /// - Returns: A new instance of `_ChatUserSearchController`.
     ///
-    public func userSearchController() -> _ChatUserSearchController<ExtraData> {
-        .init(client: self)
+    open func userSearchController() -> _ChatUserSearchController<ExtraData> {
+//        .init(client: self)
+      
+      _LogicConfig.default.userSearchControllerHack.init(client: self) // ensure our custom type is init-ed
     }
 }
 
@@ -36,12 +70,12 @@ public typealias ChatUserSearchController = _ChatUserSearchController<NoExtraDat
 ///
 /// Learn more about using custom extra data in our [cheat sheet](https://github.com/GetStream/stream-chat-swift/wiki/Cheat-Sheet#working-with-extra-data).
 ///
-public class _ChatUserSearchController<ExtraData: ExtraDataTypes>: DataController, DelegateCallable, DataStoreProvider {
+open class _ChatUserSearchController<ExtraData: ExtraDataTypes>: DataController, DelegateCallable, DataStoreProvider {
     /// The `ChatClient` instance this controller belongs to.
     public let client: _ChatClient<ExtraData>
     
     /// Filter hash this controller observes.
-    let explicitFilterHash = UUID().uuidString
+    public let explicitFilterHash = UUID().uuidString
     
     lazy var query: _UserListQuery<ExtraData.User> = {
         // Filter is just a mock, explicit hash will override it
@@ -104,9 +138,9 @@ public class _ChatUserSearchController<ExtraData: ExtraDataTypes>: DataControlle
         }
     }
     
-    private let environment: Environment
+    public let environment: Environment
     
-    init(client: _ChatClient<ExtraData>, environment: Environment = .init()) {
+    public required init(client: _ChatClient<ExtraData>, environment: Environment = .init()) {
         self.client = client
         self.environment = environment
     }
@@ -124,7 +158,7 @@ public class _ChatUserSearchController<ExtraData: ExtraDataTypes>: DataControlle
     ///
     /// It's safe to call this method repeatedly.
     ///
-    private func startUserListObserverIfNeeded() {
+    public func startUserListObserverIfNeeded() {
         guard state == .initialized else { return }
         do {
             try userListObserver.startObserving()
@@ -163,6 +197,17 @@ public class _ChatUserSearchController<ExtraData: ExtraDataTypes>: DataControlle
     public func search(term: String?, completion: ((_ error: Error?) -> Void)? = nil) {
         startUserListObserverIfNeeded()
         
+        let query = buildQuery(term: term)
+        
+        lastQuery = query
+        
+        userQueryUpdater.update(userListQuery: query, policy: .replace) { error in
+            self.state = error == nil ? .remoteDataFetched : .remoteDataFetchFailed(ClientError(with: error))
+            self.callback { completion?(error) }
+        }
+    }
+  
+    open func buildQuery(term: String?) -> _UserListQuery<ExtraData.User> {
         var query = _UserListQuery<ExtraData.User>(sort: [.init(key: .name, isAscending: true)])
         if let term = term, !term.isEmpty {
             query.filter = .or([
@@ -176,13 +221,7 @@ public class _ChatUserSearchController<ExtraData: ExtraDataTypes>: DataControlle
         // so we only sort client-side
         query.filter?.explicitHash = explicitFilterHash
         query.shouldBeUpdatedInBackground = false
-        
-        lastQuery = query
-        
-        userQueryUpdater.update(userListQuery: query, policy: .replace) { error in
-            self.state = error == nil ? .remoteDataFetched : .remoteDataFetchFailed(ClientError(with: error))
-            self.callback { completion?(error) }
-        }
+        return query
     }
     
     /// Loads next users from backend.
@@ -209,8 +248,8 @@ public class _ChatUserSearchController<ExtraData: ExtraDataTypes>: DataControlle
     }
 }
 
-extension _ChatUserSearchController {
-    struct Environment {
+public extension _ChatUserSearchController {
+    public struct Environment {
         var userQueryUpdaterBuilder: (
             _ database: DatabaseContainer,
             _ apiClient: APIClient
@@ -224,6 +263,10 @@ extension _ChatUserSearchController {
             -> ListDatabaseObserver<_ChatUser<ExtraData.User>, UserDTO> = {
                 ListDatabaseObserver(context: $0, fetchRequest: $1, itemCreator: $2)
             }
+      
+      public init() {
+        
+      }
     }
 }
 

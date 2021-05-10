@@ -17,6 +17,7 @@ open class _ChatMessageContentView<ExtraData: ExtraDataTypes>: _View, UIConfigPr
     public var onLinkTap: (ChatMessageDefaultAttachment?) -> Void = { _ in } {
         didSet { updateContentIfNeeded() }
     }
+    public var onAvatarTap: (_ChatMessageGroupPart<ExtraData>?) -> Void = { _ in }
 
     // MARK: - Subviews
 
@@ -41,6 +42,8 @@ open class _ChatMessageContentView<ExtraData: ExtraDataTypes>: _View, UIConfigPr
     public var threadView: _ChatMessageThreadInfoView<ExtraData>?
 
     public var errorIndicator: _ChatMessageErrorIndicator<ExtraData>?
+    
+    // MARK: - Properties
 
     var incomingMessageConstraints: [NSLayoutConstraint] = []
     var outgoingMessageConstraints: [NSLayoutConstraint] = []
@@ -52,6 +55,15 @@ open class _ChatMessageContentView<ExtraData: ExtraDataTypes>: _View, UIConfigPr
     var outgoingMessageIsThreadConstraints: [NSLayoutConstraint] = []
     
     var didSetUpConstraints = false
+    
+    var alignment: _СhatMessageCollectionViewCell<ExtraData>.MessageAlignment = .auto
+    
+    public enum AvatarDisplayMode {
+        case all
+        case incomingOnly
+    }
+    
+    public var avatarDisplayMode: AvatarDisplayMode = .all
 
     // MARK: - Setup family of functions
     
@@ -114,14 +126,17 @@ open class _ChatMessageContentView<ExtraData: ExtraDataTypes>: _View, UIConfigPr
             messageMetadataView.trailingAnchor.pin(equalTo: messageBubbleView.trailingAnchor).with(priority: .defaultHigh)
         ]
         
-        bubbleToMetadataConstraint = messageMetadataView.topAnchor.pin(
-            equalToSystemSpacingBelow: messageBubbleView.bottomAnchor,
-            multiplier: 1
-        )
+      bubbleToMetadataConstraint = messageMetadataView.topAnchor.pin(equalTo: messageBubbleView.bottomAnchor, constant: 8)
+//        bubbleToMetadataConstraint = messageMetadataView.topAnchor.pin(
+//            equalToSystemSpacingBelow: messageBubbleView.bottomAnchor,
+//            multiplier: 1
+//        )
         
         setNeedsUpdateConstraints()
     }
-    
+  
+    private lazy var tapGesture = UITapGestureRecognizer(target: self, action: #selector(didTapOnAvatar))
+
     open func setupAvatarView() {
         guard authorAvatarView == nil else { return }
         
@@ -134,23 +149,43 @@ open class _ChatMessageContentView<ExtraData: ExtraDataTypes>: _View, UIConfigPr
         self.authorAvatarView = authorAvatarView
         
         addSubview(authorAvatarView)
+      
+        authorAvatarView.addGestureRecognizer(tapGesture)
         
         constraintsToActivate += [
             authorAvatarView.widthAnchor.pin(equalToConstant: 32),
             authorAvatarView.heightAnchor.pin(equalToConstant: 32),
-            authorAvatarView.leadingAnchor.pin(equalTo: leadingAnchor),
-            authorAvatarView.bottomAnchor.pin(equalTo: bottomAnchor)
+//            authorAvatarView.leadingAnchor.pin(equalTo: leadingAnchor),
+//            authorAvatarView.bottomAnchor.pin(equalTo: bottomAnchor)
+          
+          // CJM: This is simply becase our UI calls for a top-aligned avatar.
+          authorAvatarView.topAnchor.pin(equalTo: topAnchor)
         ]
+        
+        switch alignment {
+        case .leading, .auto: constraintsToActivate.append(authorAvatarView.leadingAnchor.pin(equalTo: leadingAnchor))
+        case .trailing: constraintsToActivate.append(authorAvatarView.trailingAnchor.pin(equalTo: trailingAnchor))
+        }
         
         setupMessageBubbleView()
         let messageBubbleView = self.messageBubbleView!
         
-        incomingMessageConstraints += [
-            messageBubbleView.leadingAnchor.pin(
-                equalToSystemSpacingAfter: authorAvatarView.trailingAnchor,
-                multiplier: 1
-            )
-        ]
+        switch alignment {
+        case .leading, .auto:
+            incomingMessageConstraints += [
+                messageBubbleView.leadingAnchor.pin(
+                    equalToSystemSpacingAfter: authorAvatarView.trailingAnchor,
+                    multiplier: 1
+                )
+            ]
+        case .trailing:
+            outgoingMessageConstraints += [
+                messageBubbleView.trailingAnchor.pin(
+                    equalToSystemSpacingAfter: authorAvatarView.leadingAnchor,
+                    multiplier: 1
+                )
+            ]
+        }
         
         setNeedsUpdateConstraints()
     }
@@ -578,8 +613,13 @@ open class _ChatMessageContentView<ExtraData: ExtraDataTypes>: _View, UIConfigPr
     open func updateAvatarViewIfNeeded() {
         guard let message = message else { return /* todo */ }
         
-        let shouldDisplayAuthorAvatarView = !message.isSentByCurrentUser && message.isLastInGroup
-        
+        var shouldDisplayAuthorAvatarView: Bool
+        if alignment == .auto {
+            shouldDisplayAuthorAvatarView  = !message.isSentByCurrentUser && message.isLastInGroup
+        } else {
+            shouldDisplayAuthorAvatarView = avatarDisplayMode == .all ? message.isLastInGroup : (!message.isSentByCurrentUser && message.isLastInGroup)
+        }
+      
         setupAvatarView()
         let authorAvatarView = self.authorAvatarView!
         
@@ -734,13 +774,23 @@ open class _ChatMessageContentView<ExtraData: ExtraDataTypes>: _View, UIConfigPr
     }
     
     open func updateMessagePositionIfNeeded() { // TODO: find a better name
-        if message?.isSentByCurrentUser ?? false {
-            constraintsToActivate.append(contentsOf: outgoingMessageConstraints)
-            constraintsToDeactivate.append(contentsOf: incomingMessageConstraints)
-        } else {
+        switch alignment {
+        case .leading:
             constraintsToActivate.append(contentsOf: incomingMessageConstraints)
             constraintsToDeactivate.append(contentsOf: outgoingMessageConstraints)
+        case .trailing:
+            constraintsToActivate.append(contentsOf: outgoingMessageConstraints)
+            constraintsToDeactivate.append(contentsOf: incomingMessageConstraints)
+        case .auto:
+            if message?.isSentByCurrentUser ?? false {
+                constraintsToActivate.append(contentsOf: outgoingMessageConstraints)
+                constraintsToDeactivate.append(contentsOf: incomingMessageConstraints)
+            } else {
+                constraintsToActivate.append(contentsOf: incomingMessageConstraints)
+                constraintsToDeactivate.append(contentsOf: outgoingMessageConstraints)
+            }
         }
+        
     }
 
     // ======
@@ -778,6 +828,12 @@ open class _ChatMessageContentView<ExtraData: ExtraDataTypes>: _View, UIConfigPr
     }
 
     // MARK: - Actions
+  
+  // MARK: - Actions
+  
+    @objc open func didTapOnAvatar() {
+      onAvatarTap(message)
+    }
 
     @objc open func didTapOnErrorIndicator() {
         onErrorIndicatorTap(message)
@@ -810,7 +866,7 @@ public struct ChatMessageContentViewLayoutOptions: OptionSet, Hashable {
 
 // MARK: - Extensions
 
-extension _ChatMessageGroupPart {
+public extension _ChatMessageGroupPart {
     var textContent: String {
         guard message.type != .ephemeral else {
             return ""
@@ -824,7 +880,7 @@ extension _ChatMessageGroupPart {
     }
 }
 
-extension _ChatMessageGroupPart {
+public extension _ChatMessageGroupPart {
     var layoutOptions: ChatMessageContentViewLayoutOptions {
         guard message.deletedAt == nil else {
             return [.text]

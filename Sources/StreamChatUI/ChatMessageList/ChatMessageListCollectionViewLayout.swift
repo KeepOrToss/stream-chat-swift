@@ -88,7 +88,7 @@ open class ChatMessageListCollectionViewLayout: UICollectionViewLayout {
 
     /// Flag to make sure the `prepare()` function is only executed when the collection view had been loaded.
     /// The rest of the updates should come from `prepare(forCollectionViewUpdates:)`.
-    private var didPerformInitialLayout = false
+    public var didPerformInitialLayout = false
 
     // MARK: - Initialization
 

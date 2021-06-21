@@ -13,7 +13,7 @@ open class _ChatMessageMetadataView<ExtraData: ExtraDataTypes>: _View, UIConfigP
     }
 
     /// The date formatter of the `timestampLabel`
-    public lazy var dateFormatter: DateFormatter = .makeDefault()
+    open lazy var dateFormatter: DateFormatter = .makeDefault()
     
     // MARK: - Subviews
 

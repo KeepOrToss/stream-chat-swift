@@ -112,7 +112,7 @@ public struct _UserListQuery<ExtraData: UserExtraData>: Encodable {
     
     /// Indicates if the query should be observed for new users.
     /// If set to true, newly created users in the database are automatically included in the query if they fit the predicate.
-    var shouldBeUpdatedInBackground = true
+    public var shouldBeUpdatedInBackground = true
     
     /// Init a users query.
     /// - Parameters:

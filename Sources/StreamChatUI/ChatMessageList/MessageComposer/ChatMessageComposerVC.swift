@@ -27,7 +27,7 @@ open class _ChatMessageComposerVC<ExtraData: ExtraDataTypes>: _ViewController,
 
     // MARK: - Underlying types
 
-    public var userSuggestionSearchController: _ChatUserSearchController<ExtraData>!
+    public var userSuggestionSearchController: _ChatUserSearchController<ExtraData>! // hook into, inject via config
     public private(set) lazy var suggestionsViewController =
         uiConfig.messageComposer.suggestionsViewController.init()
 
@@ -100,6 +100,7 @@ open class _ChatMessageComposerVC<ExtraData: ExtraDataTypes>: _ViewController,
 
     override open func updateContent() {
         super.updateContent()
+      print("update content", state)
         switch state {
         case .initial:
             textView.text = ""
@@ -286,7 +287,7 @@ open class _ChatMessageComposerVC<ExtraData: ExtraDataTypes>: _ViewController,
         setInput(shrinked: true)
     }
     
-    func setInput(shrinked: Bool) {
+    open func setInput(shrinked: Bool) {
         for button in composerView.container.leftStackView.arrangedSubviews where button !== composerView.shrinkInputButton {
             button.setAnimatedly(hidden: !shrinked)
         }
@@ -478,7 +479,7 @@ open class _ChatMessageComposerVC<ExtraData: ExtraDataTypes>: _ViewController,
 
                 textView.textStorage.replaceCharacters(
                     in: NSRange(location: atRange.location, length: cursorPosition.location - atRange.location),
-                    with: "@\(user.id) "
+                    with: self.mentionText(forUser: user)
                 )
 
                 let newPosition = (textView.text as NSString).length - oldPositionTillTheEnd
@@ -495,6 +496,10 @@ open class _ChatMessageComposerVC<ExtraData: ExtraDataTypes>: _ViewController,
                 self.dismissSuggestionsViewController()
             }
         )
+    }
+
+    open func mentionText(forUser user: _ChatUser<ExtraData.User>) -> String {
+      "@\(user.id) "
     }
 
     func replaceTextWithSlashCommandViewIfNeeded() {

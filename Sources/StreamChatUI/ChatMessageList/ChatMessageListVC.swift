@@ -217,6 +217,7 @@ open class _ChatMessageListVC<ExtraData: ExtraDataTypes>: _ViewController,
         let message = messageGroupPart(at: indexPath)
 
         let reuseIdentifier = cellReuseIdentifierForMessage(message)
+        // print(reuseIdentifier)
         let cell = collectionView.dequeueReusableCell(
             withReuseIdentifier: reuseIdentifier,
             for: indexPath
